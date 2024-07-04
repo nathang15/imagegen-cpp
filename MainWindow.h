@@ -85,7 +85,12 @@ private:
     uint32_t curImgNum;
     bool loadingModels();
     size_t curImgDisplayIndex;
-    std::vector<TopImg*> topImgs;
+    std::vector<TopBarImg*> topBarImgs;
+    QProgressBar* curPgb;
+    void updateModelsList();
+    void updateSelectedTopBarImg(size_t NewSelected);
+    void resetViewports();
+    void onImg2ImgEnabled();
 
 private:
     QTimer* progressPoller;
