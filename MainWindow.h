@@ -2,9 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "Inferer.h"
 #include <QHBoxLayout>
 #include <QTimer>
 #include <queue>
+#include "TopbarImg.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -40,7 +42,7 @@ public:
     QWindow* ParentWin;
 
 public slots:
-    void onDone(QImage inImg, sdJobType jobType);
+    void onImgDone(QImage inImg, sdJobType jobType);
     void onInpaintWidImgSet();
     void onSendImg2Img(QImage* img);
     void onSendToInpaint(QImage* img);
@@ -52,9 +54,9 @@ private slots:
     void onProgressPoll();
     void onThreadDone();
 
-    void onTopBarHoverEnter(size_t lblIndex);
-    void onTopBarHoverExit(size_t lblIndex);
-    void onTopBarClick(size_t lblIndex);
+    void onTopBarHoverEnter(size_t labelIndex);
+    void onTopBarHoverExit(size_t labelIndex);
+    void onTopBarClick(size_t labelIndex);
 
 private slots:
     void onGenerateBtnClicked();

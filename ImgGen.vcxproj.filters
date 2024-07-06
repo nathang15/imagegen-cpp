@@ -40,8 +40,64 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ClickableImgLabel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ESRGAN.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HorizontalScrollArea.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Inferer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Canvas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SDModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TopbarImg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Upscaler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\onnxruntime.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="ClickableImgLabel.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="HorizontalScrollArea.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Inferer.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="Canvas.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="TopbarImg.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ESRGAN.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDModel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Upscaler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InteropAxodoxCommon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

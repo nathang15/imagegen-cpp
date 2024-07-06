@@ -7,7 +7,7 @@
 #include <QDir>
 #include <algorithm>
 
-//#include "ESRGAN.h"
+#include "ESRGAN.h"
 
 static QString createOutputFolder() {
     QString appPath = QCoreApplication::applicationDirPath();
@@ -89,40 +89,65 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
     FirstShowed = false;
 }
 
-void MainWindow::onInpaintWidImgSet()
-{
+void MainWindow::onImgDone(QImage inImg, sdJobType jobType) {
+
 }
 
-void MainWindow::onSendImg2Img(QImage* img)
-{
+
+void MainWindow::onInpaintWidImgSet() {
+    ui->labelImg2ImgASsist->hide();
 }
 
-void MainWindow::onSendToInpaint(QImage* img)
-{
+void MainWindow::onSendImg2Img(QImage* img) {
+    ui->chkImg2Img->setChecked(true);
+    ui->widInpaintCanvas->loadImage(*img);
+    ui->chkInpaint->setChecked(false);
 }
 
-void MainWindow::onSendToUpscale(QImage* img)
-{
+void MainWindow::onSendToInpaint(QImage* img) {
+    ui->chkInpaint->setChecked(true);
+	ui->widInpaintCanvas->loadImage(*img);
+	ui->chkImg2Img->setChecked(true);
 }
 
-void MainWindow::onLabelCtxMenu(QMenu* ctxMenu)
-{
+void MainWindow::onSendToUpscale(QImage* img) {
+    ui->tabsMain->setCurrentIndex(1);
+    ui->tabsUpsOptions->setCurrentIndex(0);
+    ui->labelUpscalePreImg->setImage(*img);
 }
 
-void MainWindow::onThreadDone()
-{
+void MainWindow::onLabelCtxMenu(QMenu* ctxMenu) {
 }
 
-void MainWindow::onTopBarHoverEnter(size_t lblIndex)
-{
+void MainWindow::onProgressPoll() {
+    if (!curPgb)
+        return;
+    curPgb->setValue((int_32)(curAsyncSrc->state().progress * 100.f));
 }
 
-void MainWindow::onTopBarHoverExit(size_t lblIndex)
-{
+void MainWindow::onThreadDone() {
+    processing = false;
+    iterateQueue();
 }
 
-void MainWindow::onTopBarClick(size_t lblIndex)
-{
+void MainWindow::onTopBarHoverEnter(size_t labelIndex) {
+    int32_t neighbor = getNeighbor(labelIndex);
+    if (neighbor == -1)
+        return;
+
+    TopBarImages[neighbor]->setHoveringBorder(true);
+}
+
+void MainWindow::onTopBarHoverExit(size_t labelIndex) {
+    int32_t neighbor = getNeighbor(labelIndex);
+    if (neighbor == -1)
+        return;
+
+    TopBarImages[neighbor]->setHoveringBorder(false);
+}
+
+void MainWindow::onTopBarClick(size_t labelIndex) {
+
 }
 
 void MainWindow::onGenerateBtnClicked()

@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.props" Condition="Exists('packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.props')" />
+  <Import Project="packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.props" Condition="Exists('packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.props')" />
+  <Import Project="packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.props" Condition="Exists('packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -103,14 +104,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SDModel.cpp" />
+    <ClCompile Include="TopbarImg.cpp" />
+    <ClCompile Include="Upscaler.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="MainWindow.ui" />
     <QtMoc Include="MainWindow.h" />
+    <ClCompile Include="Canvas.cpp" />
+    <ClCompile Include="ClickableImgLabel.cpp" />
+    <ClCompile Include="ESRGAN.cpp" />
+    <QtMoc Include="HorizontalScrollArea.h" />
+    <ClCompile Include="HorizontalScrollArea.cpp" />
+    <QtMoc Include="Inferer.h" />
+    <ClCompile Include="Inferer.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="ClickableImgLabel.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="InteropAxodoxCommon.hpp" />
+    <ClInclude Include="SDModel.h" />
+    <ClInclude Include="Upscaler.h" />
+    <QtMoc Include="TopbarImg.h" />
+    <QtMoc Include="Canvas.h" />
+    <ClInclude Include="ESRGAN.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
@@ -119,7 +141,9 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Axodox.Common.1.0.42\build\native\Axodox.Common.targets" Condition="Exists('packages\Axodox.Common.1.0.42\build\native\Axodox.Common.targets')" />
     <Import Project="packages\Axodox.MachineLearning.2.0.55\build\native\Axodox.MachineLearning.targets" Condition="Exists('packages\Axodox.MachineLearning.2.0.55\build\native\Axodox.MachineLearning.targets')" />
-    <Import Project="packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.targets" Condition="Exists('packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.targets')" />
+    <Import Project="packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.targets" Condition="Exists('packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.targets')" />
+    <Import Project="packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.targets" Condition="Exists('packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.targets')" />
+    <Import Project="packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets" Condition="Exists('packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -127,7 +151,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('packages\Axodox.Common.1.0.42\build\native\Axodox.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Axodox.Common.1.0.42\build\native\Axodox.Common.targets'))" />
     <Error Condition="!Exists('packages\Axodox.MachineLearning.2.0.55\build\native\Axodox.MachineLearning.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Axodox.MachineLearning.2.0.55\build\native\Axodox.MachineLearning.targets'))" />
-    <Error Condition="!Exists('packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.props'))" />
-    <Error Condition="!Exists('packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Axodox.MachineLearning.OnnxRuntime.DirectML.1.17.1.1\build\native\Axodox.MachineLearning.OnnxRuntime.DirectML.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.AI.DirectML.1.14.1\build\Microsoft.AI.DirectML.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.props'))" />
+    <Error Condition="!Exists('packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.ML.OnnxRuntime.DirectML.1.18.1\build\native\Microsoft.ML.OnnxRuntime.DirectML.targets'))" />
+    <Error Condition="!Exists('packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets'))" />
   </Target>
 </Project>
