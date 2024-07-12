@@ -20,7 +20,7 @@ using namespace std;
 struct sdOrder {
     string prompt;
     string negPrompt;
-    //Axodox::MachineLearning::StableDiffusionOptions options;
+    Axodox::MachineLearning::StableDiffusionOptions options;
     uint32_t batchCount;
     bool randSeed;
     QImage inImage;
@@ -100,7 +100,7 @@ private:
     QString outDir;
     QSpacerItem* previews;
     bool useFirst;
-    sdModel curModel;
+    SDModel curModel;
     Upscaler curUpscaler;
     Inferer* curInferThread;
     void updateUpscalerList();
