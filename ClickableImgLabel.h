@@ -48,9 +48,9 @@ private slots:
     void onClickSendToUpscale();
 
 private:
-    QAction* sendToInpaint;
-    QAction* sendToImg2Img;
-    QAction* sendToUpscale;
+    QAction* actSendToInpaint;
+    QAction* actSendToImg2Img;
+    QAction* actSendToUpscale;
 
 };
 

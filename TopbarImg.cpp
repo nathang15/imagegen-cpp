@@ -29,17 +29,17 @@ void TopbarImg::leaveEvent(QEvent* event)
 		return;
 
 	setHoveringBorder(false);
-	emit hoverLeave(VecIndex);
+	emit hoverExit(VecIndex);
 }
 
 void TopbarImg::mousePressEvent(QMouseEvent* event)
 {
 	QLabel::mousePressEvent(event);
-	emit clicked(VecIndex);
+	emit mouseClicked(VecIndex);
 	
 }
 
-void TopBarImg::setHoveringBorder(bool hovering)
+void TopbarImg::setHoveringBorder(bool hovering)
 {
 	if (hovering)
 		setStyleSheet("border: 2px solid yellow;");
@@ -47,7 +47,7 @@ void TopBarImg::setHoveringBorder(bool hovering)
 		setStyleSheet("");
 }
 
-void TopBarImg::setSelectedBorder(bool selected)
+void TopbarImg::setSelectedBorder(bool selected)
 {
 	if (selected)
 		setStyleSheet("border: 3px solid blue;");

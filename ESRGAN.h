@@ -11,9 +11,9 @@ namespace Axodox::MachineLearning {
 
 		void Evict();
 	};
-	private:
-		OnxxEnvironment& _env;
-		Ort::Session _session;
-		bool _isUsingFloat16;
-	}
+private:
+	OnxxEnvironment& _env;
+	Ort::Session _session;
+	bool _isUsingFloat16;
+}
 }

@@ -15,15 +15,15 @@
 ClickableImgLabel::ClickableImgLabel(QWidget* parent) : QLabel(parent)
 {
 	originalImg = nullptr;
-	pToOriginalFilePath = nullptr;
+	pointerToFilePath = nullptr;
 
-	sendToImg2Img = new QAction("Send to Img2Img", this);
-	sendToInpaint = new QAction("Send to Inpaint", this);
-	sendToUpscale = new QAction("Send to Upscale", this);
+	actSendToImg2Img = new QAction("Send to img2img", this);
+	actSendToInpaint = new QAction("Send to inpaint", this);
+	actSendToUpscale = new QAction("Send to upscale", this);
 
-	connect(sendToImg2Img, &QAction::triggered, this, &ClickableImgLabel::OnClickSendToImg2Img);
-	connect(sendToInpaint, &QAction::triggered, this, &ClickableImgLabel::OnClickSendToInpaint);
-	connect(sendToUpscale, &QAction::triggered, this, &ClickableImgLabel::OnClickSendToUpscale);
+	connect(actSendToImg2Img, &QAction::triggered, this, &ClickableImgLabel::onClickSendToImg2Img);
+	connect(actSendToInpaint, &QAction::triggered, this, &ClickableImgLabel::onClickSendToInpaint);
+	connect(actSendToUpscale, &QAction::triggered, this, &ClickableImgLabel::onClickSendToUpscale);
 
 	ownsImg = false;
 }
@@ -33,7 +33,7 @@ ClickableImgLabel::~ClickableImgLabel()
 	if (ownsImg && originalImg)
 	{
 		delete originalImg;
-		delete pToOriginalFilePath;
+		delete pointerToFilePath;
 	}
 
 	((QLabel*)this)->~QLabel();
@@ -42,7 +42,7 @@ ClickableImgLabel::~ClickableImgLabel()
 void ClickableImgLabel::loadImage(const QString& imgPath)
 {
 	originalImg = new QImage(imgPath);
-	pToOriginalFilePath = new QString(imgPath);
+	pointerToFilePath = new QString(imgPath);
 
 	ownsImg = true;
 	setImage(originalImg);
@@ -51,13 +51,15 @@ void ClickableImgLabel::loadImage(const QString& imgPath)
 void ClickableImgLabel::setImage(QImage* img)
 {
 	originalImg = img;
-	setPixmap(QPixmap::fromImage(originalImg->scaled(pixmap()->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+	setPixmap(
+		QPixmap::fromImage(originalImg->scaled(pixmap().size(), Qt::KeepAspectRatio, Qt::SmoothTransformation))
+	);
 }
 
 void ClickableImgLabel::contextMenuEvent(QContextMenuEvent* event)
 {
 	QLabel::contextMenuEvent(event);
-	if (!pToOriginalFilePath)
+	if (!pointerToFilePath)
 		return;
 
 	QMenu ctxMenu(this);
@@ -66,9 +68,9 @@ void ClickableImgLabel::contextMenuEvent(QContextMenuEvent* event)
 	connect(&action, &QAction::triggered, this, &ClickableImgLabel::showInFolder);
 	ctxMenu.addAction(&action);
 
-	ctxMenu.addAction(sendToImg2Img);
-	ctxMenu.addAction(sendToInpaint);
-	ctxMenu.addAction(sendToUpscale);
+	ctxMenu.addAction(actSendToImg2Img);
+	ctxMenu.addAction(actSendToInpaint);
+	ctxMenu.addAction(actSendToUpscale);
 	ctxMenu.exec(event->globalPos());
 }
 
@@ -79,12 +81,12 @@ void ClickableImgLabel::mousePressEvent(QMouseEvent* event)
 	if (!originalImg)
 		return;
 
-	if (event->button != Qt::LeftButton)
+	if (event->button() != Qt::MouseButton::LeftButton)
 		return;
 
 	if (originalImg->size().width() > 1024 && originalImg->size().height() > 1024)
 	{
-		QDesktopServices::openUrl(QUrl::fromLocalFile(*pToOriginalFielPath));
+		QDesktopServices::openUrl(QUrl::fromLocalFile(*pointerToFilePath));
 		return;
 	}
 
@@ -100,15 +102,15 @@ void ClickableImgLabel::mousePressEvent(QMouseEvent* event)
 	dialog->exec();
 }
 
-void ClickableImgLabel::dragEnterEvent(QDragEnterEvent *event)
+void ClickableImgLabel::dragEnterEvent(QDragEnterEvent* event)
 {
-	if (event->mimeData()->hasUrls() && !event->mimeData()->urls().isEmpty()
+	if (event->mimeData()->hasUrls() && !event->mimeData()->urls().isEmpty())
 	{
 		QList<QUrl> urls = event->mimeData()->urls();
 		for (const QUrl& url : urls)
 		{
 			QFileInfo fileInfo(url.toLocalFile());
-			if (fileInfo.exists() && fileInfo.isFile() && 
+			if (fileInfo.exists() && fileInfo.isFile() &&
 				QImageReader::imageFormat(fileInfo.filePath()).isEmpty() == false) {
 				event->acceptProposedAction();
 				return;
@@ -136,11 +138,11 @@ void ClickableImgLabel::dropEvent(QDropEvent* event)
 	}
 }
 
-void ClickableImageLabel::showInFolder()
+void ClickableImgLabel::showInFolder()
 {
-	if (pToOriginalFilePath && !pToOriginalFilePath->isEmpty())
+	if (pointerToFilePath && !pointerToFilePath->isEmpty())
 	{
-		QString winPath = QDir::toNativeSeparators(*pToOriginalFilePath);
+		QString winPath = QDir::toNativeSeparators(*pointerToFilePath);
 		QStringList args;
 
 		args << "/select," << winPath;
@@ -148,17 +150,17 @@ void ClickableImageLabel::showInFolder()
 	}
 }
 
-void ClickableImageLabel::onClickSendToImg2Img()
+void ClickableImgLabel::onClickSendToImg2Img()
 {
 	emit sendToImg2Img(originalImg);
 }
 
-void ClickableImageLabel::onClickSendToInpaint()
+void ClickableImgLabel::onClickSendToInpaint()
 {
 	emit sendToInpaint(originalImg);
 }
 
-void ClickableImageLabel::onClickSendToUpscale()
+void ClickableImgLabel::onClickSendToUpscale()
 {
 	emit sendToUpscale(originalImg);
 }

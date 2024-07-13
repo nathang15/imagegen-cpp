@@ -42,7 +42,7 @@ public:
     QWindow* ParentWin;
 
 public slots:
-    void onImgDone(QImage inImg, sdJobType jobType);
+    void onImgDone(QImage inImg, SDJobType jobType);
     void onInpaintWidImgSet();
     void onSendImg2Img(QImage* img);
     void onSendToInpaint(QImage* img);
@@ -62,7 +62,7 @@ private slots:
     void onGenerateBtnClicked();
     void onLoadModelBtnClicked();
     void onImgFwdBtnClicked();
-    void ImgBwdBtnClicked();
+    void onImgBwdBtnClicked();
     void onScrollLeft();
     void onScrollRight();
     void onOpenOutputsFolder();

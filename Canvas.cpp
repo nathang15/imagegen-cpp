@@ -76,7 +76,7 @@ void Canvas::mouseMoveEvent(QMouseEvent* event)
 	double scaleFactorY = static_cast<double>(originalImage.height() / displayedImage.height());
 
 	QPoint scaledLastPoint(lastPoint.x() * scaleFactorX, lastPoint.y() * scaleFactorY);
-	QPoint scaledCurPoint(event->pos().x * scaleFactorX, event->pos().y * scaleFactorY));
+	QPoint scaledCurPoint(event->pos().x() * scaleFactorX, event->pos().y() * scaleFactorY);
 
 	QPainter painter(&maskImage);
 

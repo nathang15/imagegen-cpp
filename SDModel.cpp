@@ -1,4 +1,4 @@
-#include "stablediffusionmodel.h"
+#include "SDModel.h"
 #include "Collections/Hasher.h"
 #include "Infrastructure/BitwiseOperations.h"
 #include "Infrastructure/DependencyContainer.h"
@@ -44,7 +44,7 @@ void SDModel::createTextEmbeddings(const std::string& prompt, const std::string&
 	for (auto weight : encodedPrompt[0].Weights) options.TextEmbeddings.Weights.push_back(weight);
 
 	ScheduledTensor tensor = *schTensor;
-	trivial_map<void*, void*, shared_ptr<EncodedText>> embeddingBuffer;
+	trivial_map<pair<void*, void*>, shared_ptr<EncodedText>> embeddingBuffer;
 	for (auto i = 0u; i < options.StepCount; i++)
 	{
 		auto& concatTensor = embeddingBuffer[{encodedNegPrompt[i].Tensor.get(), encodedPrompt[i].Tensor.get() }];
@@ -60,7 +60,7 @@ void SDModel::createTextEmbeddings(const std::string& prompt, const std::string&
 
 void SDModel::loadVAEEncoder()
 {
-	VAE_E = make_unique<VaeEncoder>(*env);
+	VAE_E = std::make_unique<VaeEncoder>(*env);
 }
 
 SDModel::SDModel()

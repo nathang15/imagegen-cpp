@@ -9,7 +9,7 @@ class HorizontalScrollArea : public QScrollArea {
     Q_OBJECT
 
 public:
-    explicit horizontalScrollArea(QWidget* parent = nullptr);
+    explicit HorizontalScrollArea(QWidget* parent = nullptr);
 
     void registerContentsWidget(QWidget* scraWidContents);
 

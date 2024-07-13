@@ -1,11 +1,27 @@
 #include "MainWindow.h"
 #include <QApplication>
-#include <QImage>
+#include <QMainWindow>
+#include <QWidget>
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QApplication a(argc, argv);
+
+    winrt::uninit_apartment();
+    winrt::init_apartment();
+    CoInitialize(nullptr);
+
+    QMainWindow mainWindow;
+    QWidget centralWidget(&mainWindow);
     MainWindow w;
-    w.show();
+
+    mainWindow.setCentralWidget(&centralWidget);
+    centralWidget.setLayout(new QVBoxLayout);
+    centralWidget.layout()->addWidget(&w);
+
+    w.resize(1300, 1115);
+    mainWindow.resize(1300, 1115);
+    mainWindow.show();
+
     return a.exec();
 }

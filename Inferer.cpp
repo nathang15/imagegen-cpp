@@ -2,7 +2,7 @@
 #include <iostream>
 #include <random>
 #include <QDebug>
-#include "QtAxodoxInteropCommon.hpp"
+#include "InteropAxodoxCommon.hpp"
 
 using namespace Axodox::Graphics;
 using namespace Axodox::MachineLearning;

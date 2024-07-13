@@ -4,7 +4,7 @@
 #include <QScrollBar>
 #include <QEvent>
 
-HorizontalScrollArea::horizontalScrollArea(QWidget* parent) : QScrollArea(parent)
+HorizontalScrollArea::HorizontalScrollArea(QWidget* parent) : QScrollArea(parent)
 {
 	setWidgetResizable(true);
 	setFrameStyle(QFrame::NoFrame);
