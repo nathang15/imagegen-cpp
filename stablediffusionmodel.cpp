@@ -3,7 +3,6 @@
 #include "Infrastructure/BitwiseOperations.h"
 #include "Infrastructure/DependencyContainer.h"
 
-
 using namespace Axodox::Graphics;
 using namespace Axodox::MachineLearning;
 using namespace Axodox::Collections;
@@ -33,10 +32,10 @@ void StableDiffusionModel::GetPredictionType(const std::string& ModelPath)
 
     std::string PredTypeString = SchedulerConf["prediction_type"].get<std::string>();
 
-//    if (PredTypeString == "v_prediction")
-//        PredictionType = StableDiffusionSchedulerKind::V;
-//    else
-//        PredictionType = StableDiffusionSchedulerKind::Epsilon;
+    if (PredTypeString == "v_prediction")
+        PredictionType = StableDiffusionSchedulerPredictionType ::V;
+    else
+        PredictionType = StableDiffusionSchedulerPredictionType::Epsilon;
 
 }
 
@@ -139,7 +138,7 @@ Tensor StableDiffusionModel::EncodeImageVAE(const Axodox::Graphics::TextureData&
 std::vector<Axodox::Collections::aligned_vector<uint8_t>> StableDiffusionModel::DoTxt2Img(const std::string& Prompt, const std::string& NegativePrompt, Axodox::MachineLearning::StableDiffusionOptions Options, Axodox::Threading::async_operation_source* OpSrc)
 {
     // Make embeddings
-    Options.Scheduler = PredictionType;
+    Options.PredictionType = PredictionType;
 
     ScheduledTensor ScheduledEmbedTens{ Options.StepCount };
     std::vector<aligned_vector<uint8_t>> ImageBuffers;

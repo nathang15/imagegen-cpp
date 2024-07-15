@@ -11,8 +11,8 @@ private:
     std::unique_ptr<Axodox::MachineLearning::VaeEncoder> VAE_E;
     std::unique_ptr<Axodox::MachineLearning::OnnxEnvironment> Env;
     ID3D12Debug* debugController;
-
-    Axodox::MachineLearning::StableDiffusionSchedulerKind PredictionType;
+ 
+    Axodox::MachineLearning::StableDiffusionSchedulerPredictionType PredictionType;
 
     bool Loaded;
 
