@@ -11,13 +11,13 @@ class HorizontalScrollArea : public QScrollArea {
 public:
     explicit HorizontalScrollArea(QWidget* parent = nullptr);
 
-    void registerContentsWidget(QWidget* scraWidContents);
+    void RegisterContentsWidget(QWidget* ScraWidContents);
 
 protected:
-    bool eventFilter(QObject* obj, QEvent* event) override;
+    bool eventFilter(QObject* o, QEvent* e) override;
 
 private:
     QWidget* m_scrollAreaWidgetContents;
 };
 
-#endif
+#endif // HORIZONTALSCROLLAREA_H

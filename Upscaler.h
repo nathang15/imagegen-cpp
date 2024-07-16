@@ -24,4 +24,4 @@ public:
     void SetEnv(Axodox::MachineLearning::OnnxEnvironment* InEnv) { Env = InEnv; }
 };
 
-#endif 
+#endif // UPSCALER_H

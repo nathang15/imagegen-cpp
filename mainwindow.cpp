@@ -1,84 +1,89 @@
-#include "MainWindow.h"
-#include "Ui_MainWindow.h"
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
 #include <random>
 #include <QSpacerItem>
 #include <QCoreApplication>
 #include <QDir>
 #include <algorithm>
-#include <QProcess>
-#include "ESRGAN.h"
 #include <QScrollBar>
-#include <QWindow>
+#include <QProcess>
 
-static QString createOutputFolder() {
-    QString appPath = QCoreApplication::applicationDirPath();
-    QString outDir = appPath + "/output";
+#include "ESRGAN.h"
 
-    QDir dir(outDir);
+QString createOutputsFolder() {
+    QString applicationPath = QCoreApplication::applicationDirPath();
+    QString OutputsDir = applicationPath + "/outputs";
+
+    QDir dir(OutputsDir);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
-    return outDir;
+    return OutputsDir;
 }
 
-static QString saveImage(const QImage& img, const QString& dirPath) {
-    QDir dir(dirPath);
+QString saveImage(const QImage& image, const QString& directoryPath) {
+    QDir dir(directoryPath);
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
-    int fileNum = 1;
+    int fileNumber = 1;
     QString filePath;
     do {
-        filePath = QString("%1/%2.png").arg(dirPath).arg(fileNum, 3, 10, QChar('0'));
-        ++fileNum;
+        filePath = QString("%1/%2.png").arg(directoryPath).arg(fileNumber, 3, 10, QChar('0'));
+        ++fileNumber;
     } while (QFile::exists(filePath));
 
-    img.save(filePath, "PNG");
+    image.save(filePath, "PNG");
     qDebug() << "Image saved to: " << filePath;
     return filePath;
 }
 
-void MainWindow::showEvent(QShowEvent* ev) {
-    QMainWindow::showEvent(ev);
+void MainWindow::showEvent(QShowEvent* event)
+{
 
-    if (FirstShowed)
+    QMainWindow::showEvent(event);
+
+    if (DidFirstShowStuff)
         return;
 
-    //ParentWin->resize(1000, 500);
-
-    FirstShowed = true;
+    DidFirstShowStuff = true;
 }
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
     ui->setupUi(this);
-    useFirst = true;
-    previews = nullptr;
+    UseFirst = true;
+    PreviewsSpacer = nullptr;
 
-    outDir = createOutputFolder();
-    curPgb = nullptr;
+    OutpsDir = createOutputsFolder();
+    CurrentPgb = nullptr;
 
-    curInferThread = nullptr;
+    CurrentInferThrd = nullptr;
 
     progressPoller = new QTimer(this);
     progressPoller->setInterval(100);
 
-    connect(progressPoller, &QTimer::timeout, this, &MainWindow::onProgressPoll);
+    connect(progressPoller, &QTimer::timeout, this, &MainWindow::OnProgressPoll);
 
     progressPoller->start();
 
-    processing = false;
-    curItemNum = 0;
-    curImgNum = 0;
-    curImgDisplayIndex = 0;
+    IsProcessing = false;
+    CurrentItemNumber = 0;
+    CurrentImageNumber = 0;
+    CurrentImgDisplayIndex = 0;
 
-    ui->scraImgPreviews->registerContentsWidget(ui->scrollAreaWidgetContents);
-    curAsyncSrc = std::make_unique<Axodox::Threading::async_operation_source>();
+    ui->scraImgPreviews->RegisterContentsWidget(ui->scrollAreaWidgetContents);
+    CurrentAsyncSrc = std::make_unique<Axodox::Threading::async_operation_source>();
 
-    updateModelsList();
 
-    resetViewports();
+    UpdateModelListing();
+
+    ResetViewports();
 
     ui->grpImg2Img->hide();
 
@@ -87,584 +92,610 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     ui->btnCancel->hide();
     ui->btnClearInpaint->hide();
-    FirstShowed = false;
+    DidFirstShowStuff = false;
 
-    connect(ui->widInpaintCanvas, &Canvas::OnImageSet, this, &MainWindow::onInpaintWidImgSet);
-    connect(ui->lblImg, &ClickableImgLabel::sendToInpaint, this, &MainWindow::onSendToInpaint);
-    connect(ui->lblImg, &ClickableImgLabel::sendToImg2Img, this, &MainWindow::onSendImg2Img);
-    connect(ui->lblImg, &ClickableImgLabel::sendToUpscale, this, &MainWindow::onSendToUpscale);
-    connect(ui->lblLeftImg, &ClickableImgLabel::sendToInpaint, this, &MainWindow::onSendToInpaint);
-    connect(ui->lblLeftImg, &ClickableImgLabel::sendToImg2Img, this, &MainWindow::onSendImg2Img);
-    connect(ui->lblLeftImg, &ClickableImgLabel::sendToUpscale, this, &MainWindow::onSendToUpscale);
+    connect(ui->widInpaintCanvas, &PaintableCanvas::OnImageSet, this, &MainWindow::OnInpaintWidImageSet);
 
-    updateUpscalerList();
+    connect(ui->lblImg, &ClickableImageLabel::SendImageToInpaint, this, &MainWindow::OnImageSendToInpaint);
+    connect(ui->lblImg, &ClickableImageLabel::SendImageToImg2Img, this, &MainWindow::OnImageSendToImg2Img);
+    connect(ui->lblImg, &ClickableImageLabel::SendImageToUpscale, this, &MainWindow::OnImageSendToUpscale);
+
+
+    connect(ui->lblLeftImg, &ClickableImageLabel::SendImageToInpaint, this, &MainWindow::OnImageSendToInpaint);
+    connect(ui->lblLeftImg, &ClickableImageLabel::SendImageToImg2Img, this, &MainWindow::OnImageSendToImg2Img);
+    connect(ui->lblLeftImg, &ClickableImageLabel::SendImageToUpscale, this, &MainWindow::OnImageSendToUpscale);
+
+    UpdateUpscalerListing();
 }
 
 MainWindow::~MainWindow()
 {
-    onClearCurOutput2();
-    curModel.Destroy();
-    try
-    {
+    on_actionClear_current_outputs_2_triggered();
+    CurrentMdl.Destroy();
+
+    try {
         delete ui;
+
     }
-    catch (...)
-    {
-        //ERROR
+    catch (...) {
+        // ...
     }
 }
 
-std::vector<QString> jobTypeToOutDir = { "txt2img", "img2img", "upscale" };
+std::vector<QString> JobTypeToOutdir = { "txt2img", "img2img", "upscale" };
 
-void MainWindow::onImgDone(QImage inImg, SDJobType jobType) {
+void MainWindow::OnImageDone(QImage InImg, StableDiffusionJobType JobType)
+{
     const int PREVIEW_RES = 430;
 
     QString dateSubfolder = QDate::currentDate().toString("dd-MM-yyyy");
-    QString folder = jobTypeToOutDir[(size_t)jobType];
-    QString targetDir = QString("%1/%3/%2").arg(outDir, dateSubfolder, folder);
+    QString ImmediateFolder = JobTypeToOutdir[(size_t)JobType];
+    QString targetDirectory = QString("%1/%3/%2").arg(OutpsDir, dateSubfolder, ImmediateFolder);
 
-    QString outPath = saveImage(inImg, targetDir);
+    QString OutPath = saveImage(InImg, targetDirectory);
 
-    if (jobType == SDJobType::upscale)
+    if (JobType == StableDiffusionJobType::Upscale)
     {
-        ui->lblUpscalePostImg->loadImage(outPath);
+        ui->lblUpscalePostImg->loadImage(OutPath);
         return;
     }
 
-    ++curImgNum;
+    ++CurrentImageNumber;
 
-    if (previews == nullptr)
-    {
-        ui->scraLayout->removeItem(previews);
-        delete previews;
-        previews = nullptr;
+    if (PreviewsSpacer) {
+        ui->scraLayout->removeItem(PreviewsSpacer);
+        delete PreviewsSpacer;
+        PreviewsSpacer = nullptr;
     }
 
-    TopbarImg* imgPreviewTop = new TopbarImg(Q_NULLPTR);
-    imgPreviewTop->setPixmap(QPixmap::fromImage(inImg).scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    imgPreviewTop->setSizePolicy(QSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum));
+    TopBarImg* ImgPreviewTop = new TopBarImg(Q_NULLPTR);
+    ImgPreviewTop->setPixmap(QPixmap::fromImage(InImg).scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    ImgPreviewTop->setSizePolicy(QSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Maximum));
 
-    topBarImgs.push_back(imgPreviewTop);
 
-    imgPreviewTop->VecIndex = topBarImgs.size() - 1;
-    imgPreviewTop->OriginalImg = inImg.copy();
-    imgPreviewTop->FilePath = outPath;
+    TopBarImages.push_back(ImgPreviewTop);
 
-    connect(imgPreviewTop, &TopbarImg::hoverEnter, this, &MainWindow::onTopBarHoverEnter);
-    connect(imgPreviewTop, &TopbarImg::hoverExit, this, &MainWindow::onTopBarHoverExit);
-    connect(imgPreviewTop, &TopbarImg::mouseClicked, this, &MainWindow::onTopBarClick);
+    ImgPreviewTop->VecIndex = TopBarImages.size() - 1;
+    ImgPreviewTop->OriginalImg = InImg.copy();
+    ImgPreviewTop->FilePath = OutPath;
 
-    ui->scraLayout->addWidget(imgPreviewTop);
+    connect(ImgPreviewTop, &TopBarImg::HoverEnter, this, &MainWindow::OnTopBarHoverEnter);
+    connect(ImgPreviewTop, &TopBarImg::HoverExit, this, &MainWindow::OnTopBarHoverExit);
+    connect(ImgPreviewTop, &TopBarImg::MouseClicked, this, &MainWindow::OnTopBarClick);
 
-    onTopBarClick(imgPreviewTop->VecIndex);
+    ui->scraLayout->addWidget(ImgPreviewTop);
+    OnTopBarClick(ImgPreviewTop->VecIndex);
 
-    ui->lblAllGensProgress->setText(QString::number(taskQueue.size()) + "orders in queue\n" + "Image" + QString::number(curImgNum) + "/" + QString::number(ui->pgbAllGens->maximum()));
+    ui->lblAllGensProgress->setText(
+        QString::number(TaskQueue.size()) + " orders in queue\n" +
+        "Image " + QString::number(CurrentImageNumber) + "/" + QString::number(ui->pgbAllGens->maximum())
+    );
 
-    ui->pgbAllGens->setValue(curImgNum);
+    ui->pgbAllGens->setValue(CurrentImageNumber);
 
-    previews = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    ui->scraLayout->addSpacerItem(previews);
+    PreviewsSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    ui->scraLayout->addSpacerItem(PreviewsSpacer);
 
     ui->scraImgPreviews->updateGeometry();
-    imgPreviewTop->updateGeometry();
 
-    QRect r = imgPreviewTop->geometry();
-    ui->scraImgPreviews->horizontalScrollBar()->setValue(r.right());
+    ImgPreviewTop->updateGeometry();
+
+    QRect r = ImgPreviewTop->geometry(); ui->scraImgPreviews->horizontalScrollBar()->setValue(r.right());
+
 }
 
-void MainWindow::onInpaintWidImgSet() {
+void MainWindow::OnInpaintWidImageSet()
+{
     ui->lblImg2ImgAssist->hide();
 }
 
-void MainWindow::onSendImg2Img(QImage* img) {
+void MainWindow::OnImageSendToImg2Img(QImage* SndImg)
+{
     ui->chkImg2Img->setChecked(true);
-    ui->widInpaintCanvas->loadImg(*img);
+    ui->widInpaintCanvas->loadImage(*SndImg);
     ui->chkInpaint->setChecked(false);
 }
 
-void MainWindow::onSendToInpaint(QImage* img) {
-    ui->chkInpaint->setChecked(true);
-    ui->widInpaintCanvas->loadImg(*img);
+void MainWindow::OnImageSendToInpaint(QImage* SndImg)
+{
     ui->chkImg2Img->setChecked(true);
+    ui->widInpaintCanvas->loadImage(*SndImg);
+    ui->chkInpaint->setChecked(true);
+
 }
 
-void MainWindow::onSendToUpscale(QImage* img) {
+void MainWindow::OnImageSendToUpscale(QImage* SndImg)
+{
     ui->tabsMain->setCurrentIndex(1);
     ui->tabsUpsOptions->setCurrentIndex(0);
-    ui->lblUpscalePreImage->setImage(img);
+
+    ui->lblUpscalePreImage->SetImage(SndImg);
 }
 
-void MainWindow::onLabelCtxMenu(QMenu* ctxMenu) {
+void MainWindow::OnImgLabelContextMenu(QMenu* CntxMenu)
+{
+
 }
 
-void MainWindow::onProgressPoll() {
-    if (!curPgb)
-        return;
-    curPgb->setValue((int32_t)(curAsyncSrc->state().progress * 100.f));
-}
-
-void MainWindow::onThreadDone() {
-    processing = false;
-    iterateQueue();
-}
-
-void MainWindow::onTopBarHoverEnter(size_t labelIndex) {
-    int32_t neighbor = getNeighbor(labelIndex);
-    if (neighbor == -1)
+void MainWindow::OnProgressPoll()
+{
+    if (!CurrentPgb)
         return;
 
-    topBarImgs[neighbor]->setHoveringBorder(true);
+    CurrentPgb->setValue((int32_t)(CurrentAsyncSrc->state().progress * 100.f));
+
 }
 
-void MainWindow::onTopBarHoverExit(size_t labelIndex) {
-    int32_t neighbor = getNeighbor(labelIndex);
-    if (neighbor == -1)
+void MainWindow::OnThreadDone()
+{
+    IsProcessing = false;
+    IterateQueue();
+}
+
+void MainWindow::OnTopBarHoverEnter(size_t LblIndex)
+{
+    int32_t Neighbor = GetNeighbor(LblIndex);
+    if (Neighbor == -1)
         return;
 
-    topBarImgs[neighbor]->setHoveringBorder(false);
+    TopBarImages[Neighbor]->SetHoveringBorder(true);
+
 }
 
-void MainWindow::onTopBarClick(size_t labelIndex) {
-    if (!topBarImgs.size())
+void MainWindow::OnTopBarHoverExit(size_t LblIndex)
+{
+    int32_t Neighbor = GetNeighbor(LblIndex);
+    if (Neighbor == -1)
+        return;
+
+    TopBarImages[Neighbor]->SetHoveringBorder(false);
+
+}
+
+void MainWindow::OnTopBarClick(size_t LblIndex)
+{
+
+
+    if (!TopBarImages.size())
         return;
 
     const int PREVIEW_RES = 430;
 
-    QPixmap viewPortImg = QPixmap::fromImage(topBarImgs[labelIndex]->OriginalImg).scaled(PREVIEW_RES, PREVIEW_RES, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QPixmap ViewportImg = QPixmap::fromImage(TopBarImages[LblIndex]->OriginalImg).scaled(PREVIEW_RES, PREVIEW_RES, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    int32_t neighbor = getNeighbor(labelIndex);
 
-    if (neighbor == -1)
+    int32_t Neighbor = GetNeighbor(LblIndex);
+
+    if (Neighbor == -1)
     {
-        ClickableImgLabel* viewPort = ui->lblLeftImg;
+        ClickableImageLabel* Viewport = ui->lblLeftImg;
 
-        if (!useFirst)
-            viewPort = ui->lblImg;
+        if (!UseFirst)
+            Viewport = ui->lblImg;
 
-        viewPort->setPixmap(viewPortImg);
-        viewPort->originalImg = &topBarImgs[labelIndex]->OriginalImg;
-        viewPort->pointerToFilePath = &topBarImgs[labelIndex]->FilePath;
+        Viewport->setPixmap(ViewportImg);
+        Viewport->OriginalImage = &TopBarImages[LblIndex]->OriginalImg;
+        Viewport->pToOriginalFilePath = &TopBarImages[LblIndex]->FilePath;
 
-        useFirst = !useFirst;
+        UseFirst = !UseFirst;
+
     }
     else
     {
-        QPixmap secondViewportImg = QPixmap::fromImage(topBarImgs[neighbor]->OriginalImg).scaled(PREVIEW_RES, PREVIEW_RES, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        QPixmap SecondViewportImg = QPixmap::fromImage(TopBarImages[Neighbor]->OriginalImg).scaled(PREVIEW_RES, PREVIEW_RES, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        ui->lblLeftImg->setPixmap(viewPortImg);
-        ui->lblLeftImg->originalImg = &topBarImgs[labelIndex]->OriginalImg;
-        ui->lblLeftImg->pointerToFilePath = &topBarImgs[labelIndex]->FilePath;
+        ui->lblLeftImg->setPixmap(ViewportImg);
+        ui->lblLeftImg->OriginalImage = &TopBarImages[LblIndex]->OriginalImg;
+        ui->lblLeftImg->pToOriginalFilePath = &TopBarImages[LblIndex]->FilePath;
 
-        ui->lblImg->setPixmap(secondViewportImg);
-        ui->lblImg->originalImg = &topBarImgs[neighbor]->OriginalImg;
-        ui->lblImg->pointerToFilePath = &topBarImgs[neighbor]->FilePath;
+        ui->lblImg->setPixmap(SecondViewportImg);
+        ui->lblImg->OriginalImage = &TopBarImages[Neighbor]->OriginalImg;
+        ui->lblImg->pToOriginalFilePath = &TopBarImages[Neighbor]->FilePath;
 
-        useFirst = true;
+        UseFirst = true;
 
     }
-    updateSelectedTopBarImg(labelIndex);
-    curImgDisplayIndex = labelIndex;
+    UpdateSelectedTopBarImg(LblIndex);
+
+    CurrentImgDisplayIndex = LblIndex;
+
 }
 
-std::vector<Axodox::MachineLearning::StableDiffusionSchedulerKind> ComboBoxIDToScheduler =
+std::vector<Axodox::MachineLearning::StableDiffusionSchedulerKind> ComboBoxIDToScheduler = { Axodox::MachineLearning::StableDiffusionSchedulerKind::DpmPlusPlus2M , Axodox::MachineLearning::StableDiffusionSchedulerKind::EulerAncestral };
+
+void MainWindow::on_btnGenerate_clicked()
 {
-    Axodox::MachineLearning::StableDiffusionSchedulerKind::DpmPlusPlus2M,
-    Axodox::MachineLearning::StableDiffusionSchedulerKind::EulerAncestral
-};
+    if (!CurrentMdl.IsLoaded())
+        on_btnLoadModel_clicked();
 
-void MainWindow::onGenerateBtnClicked()
-{
-    if (!curModel.IsLoaded())
-        onLoadModelBtnClicked();
+    Axodox::MachineLearning::StableDiffusionOptions Options;
 
-    Axodox::MachineLearning::StableDiffusionOptions options;
-    options.BatchSize = ui->spbBatchSize->value();
-    options.GuidanceScale = (float)ui->spbCFGScale->value();
+    Options.BatchSize = ui->spbBatchSize->value();
+    Options.GuidanceScale = (float)ui->spbCFGScale->value();
 
-    QString resolution = ui->edtResolution->text();
-    QStringList widthHeight = resolution.split("x");
+    QString Resolution = ui->edtResolution->text();
+    QStringList WidthHeight = Resolution.split("x");
 
-    options.Height = widthHeight[1].toInt();
-    options.Width = widthHeight[0].toInt();
-
-    //options.Scheduler = Axodox::MachineLearning::StableDiffusionSchedulerKind;
-    options.StepCount = ui->spbSamplingSteps->value();
+    Options.Height = WidthHeight[1].toInt(); Options.Width = WidthHeight[0].toInt();
+    Options.PredictionType = Axodox::MachineLearning::StableDiffusionSchedulerPredictionType::V;
+    Options.StepCount = ui->spbSamplingSteps->value();
 
     if (ui->chkImg2Img->isChecked())
     {
         float BaseDenStrength = (float)ui->sliDenoiseStrength->value();
-        options.DenoisingStrength = BaseDenStrength / 100.f;
+        Options.DenoisingStrength = BaseDenStrength / 100.f;
     }
 
     if (ui->edtSeed->text().isEmpty())
-        options.Seed = UINT32_MAX;
+        Options.Seed = UINT32_MAX;
     else
-        options.Seed = ui->edtSeed->text().toUInt();
+        Options.Seed = ui->edtSeed->text().toUInt();
 
-    options.Scheduler = ComboBoxIDToScheduler[ui->cbSampler->currentIndex()];
+    Options.Scheduler = ComboBoxIDToScheduler[ui->cbSampler->currentIndex()];
 
-    sdOrder Ord{
-        ui->edtPrompt->toPlainText().toStdString(),
-        ui->edtNegPrompt->toPlainText().toStdString(),
-        options,
-        (uint32_t)ui->spbBatchCount->value(),
-        ui->edtSeed->text().isEmpty()
-    };
-
+    SDOrder Ord{ ui->edtPrompt->toPlainText().toStdString(), ui->edtNegPrompt->toPlainText().toStdString(), Options, (uint32_t)ui->spbBatchCount->value(), ui->edtSeed->text().isEmpty() };
     if (ui->chkImg2Img->isChecked())
-        Ord.inImage = ui->widInpaintCanvas->getImg().copy();
+        Ord.InputImage = ui->widInpaintCanvas->getImage().copy();
     if (ui->chkInpaint->isChecked())
-        Ord.inMask = ui->widInpaintCanvas->getMask().copy();
+        Ord.InputMask = ui->widInpaintCanvas->getMask().copy();
 
-    taskQueue.push(Ord);
+    TaskQueue.push(Ord);
 
     ui->lblAllGensProgress->setText(
-        QString::number(taskQueue.size() + 1) + " orders in queue\n" +
-        "Image " + QString::number(curImgNum) + "/" + QString::number(ui->pgbAllGens->maximum())
+        QString::number(TaskQueue.size() + 1) + " orders in queue\n" +
+        "Image " + QString::number(CurrentImageNumber) + "/" + QString::number(ui->pgbAllGens->maximum())
     );
 
-    iterateQueue();
+    IterateQueue();
 }
 
-void MainWindow::onLoadModelBtnClicked()
+
+void MainWindow::on_btnLoadModel_clicked()
 {
     QString appDirPath = QCoreApplication::applicationDirPath();
+    QString fullModelPath = appDirPath + "/models/" + ui->edtModelPath->currentText();
 
-    QString fullModelPath = appDirPath + "/models/" + ui->edtModelPath->currentText().trimmed();
+    if (!LoadingFromModelsFolder)
+        fullModelPath = ui->edtModelPath->currentText();
 
-    if (!loadingModels)
-    {
-        fullModelPath = ui->edtModelPath->currentText().trimmed();
-    }
+    qDebug() << "Model path:" << fullModelPath;
 
-    curModel.Load(fullModelPath.toStdString());
-}
-
-void MainWindow::onImgFwdBtnClicked()
-{
-    size_t maxIndex = topBarImgs.size() - 1;
-
-    size_t doubleHopIndex = curImgDisplayIndex + 2;
-    size_t singleHopIndex = curImgDisplayIndex + 1;
-
-    if (doubleHopIndex < maxIndex)
-        onTopBarClick(doubleHopIndex);
-    else if (singleHopIndex < maxIndex)
-        onTopBarClick(singleHopIndex);
-    else
+    QFile modelFile(fullModelPath);
+    if (!modelFile.exists()) {
+        qDebug() << "Model file does not exist at path:" << fullModelPath;
         return;
-}
-
-void MainWindow::onImgBwdBtnClicked()
-{
-    size_t MinIndex = 0;
-
-    int32_t DoubleHopIndex = curImgDisplayIndex - 2;
-
-    DoubleHopIndex = std::max<int32_t>(DoubleHopIndex, 0);
-
-    onTopBarClick(DoubleHopIndex);
-}
-
-void MainWindow::onScrollLeft()
-{
-    onImgBwdBtnClicked();
-}
-
-void MainWindow::onScrollRight()
-{
-    onImgFwdBtnClicked();
-}
-
-void MainWindow::onOpenOutputsFolder()  
-{
-    QString winPath = QDir::toNativeSeparators(outDir);
-
-    QStringList args;
-    args << winPath;
-    QProcess::startDetached("explorer", args);
-}
-
-void MainWindow::onClearCurOutput2()
-{
-    if (previews)
-    {
-        ui->scraLayout->removeItem(previews);
-        delete previews;
-        previews = nullptr;
     }
 
-    for (auto* imgPreview : topBarImgs)
-    {
-        ui->scraLayout->removeWidget(imgPreview);
-        delete imgPreview;
+    try {
+        CurrentMdl.Load(fullModelPath.toStdString());
     }
-
-    topBarImgs.clear();
-    resetViewports();
-
-    curImgDisplayIndex = 0;
-}
-
-void MainWindow::onCancelBtnClicked()
-{
-    curAsyncSrc->cancel();
-}
-
-void MainWindow::onRefreshModelsList()
-{
-    updateModelsList();
-}
-
-void MainWindow::onCheckImg2ImgState(int arg)
-{
-    bool enabled = (bool)arg;
-
-    ui->grpImg2Img->setVisible(enabled);
-    ui->widInpaintCanvas->setVisible(enabled);
-    ui->lblImgArrow->setVisible(enabled);
-    ui->btnClearInpaint->setVisible(enabled);
-
-    if (enabled)
-    {
-        ui->horizontalSpacer->changeSize(0, 0, QSizePolicy::Ignored, QSizePolicy::Ignored);
-        ui->horizontalSpacer_2->changeSize(0, 0, QSizePolicy::Ignored, QSizePolicy::Ignored);
-        onImg2ImgEnabled();
+    catch (const Ort::Exception& e) {
+        qDebug() << "Ort::Exception caught:" << e.what();
     }
-    else
-    {
-        ui->horizontalSpacer->changeSize(40, 20, QSizePolicy::Expanding);
-        ui->horizontalSpacer_2->changeSize(40, 20, QSizePolicy::Expanding);
-    }
-
-    update();
-
 }
 
-void MainWindow::onDenoiseStrengthValueSet(int val)
+
+int32_t MainWindow::GetNeighbor(size_t InIdx)
 {
-    ui->lblDenoisePercShow->setText(QString::number(val) + "%");
-}
+    size_t MaxIndex = TopBarImages.size() - 1;
 
-void MainWindow::onCheckInpaintState(int arg)
-{
-    ui->widInpaintCanvas->setVisible((bool)arg);
-}
+    size_t AttemptIndex = InIdx + 1;
 
-void MainWindow::onClearInpaintBtnClicked()
-{
-    ui->widInpaintCanvas->clearStrokes();
-}
-
-void MainWindow::onUpscaleBtnClicked()
-{
-    if (!curUpscaler.IsLoaded())
-        onLoadUpscalerBtnClicked();
-
-    sdOrder Ord{
-        ui->edtPrompt->toPlainText().toStdString(),
-        ui->edtNegPrompt->toPlainText().toStdString(),
-        Axodox::MachineLearning::StableDiffusionOptions{},
-        (uint32_t)ui->spbBatchCount->value(),
-        ui->edtSeed->text().isEmpty()
-    };
-
-    Ord.inImage = *ui->lblUpscalePreImage->originalImg;
-    Ord.isUpscale = true;
-
-    taskQueue.push(Ord);
-    iterateQueue();
-}
-
-void MainWindow::onLoadUpscalerBtnClicked()
-{
-    if (!curModel.GetEnv())
-        curModel.LoadMinimal();
-    curUpscaler.SetEnv(curModel.GetEnv());
-
-    curUpscaler.Load(
-        QString(QCoreApplication::applicationDirPath() + "/upscalers" + ui->cbUpscalerModels->currentText() + "onnx").toStdString()
-    );
-}
-
-int32_t MainWindow::getNeighbor(size_t inIndex)
-{
-    size_t maxIndex = topBarImgs.size() - 1;
-
-    size_t attemptIndex = inIndex + 1;
-
-    if (attemptIndex > maxIndex)
+    if (AttemptIndex > MaxIndex)
         return -1;
 
-    return (int32_t)attemptIndex;
+    return (int32_t)AttemptIndex;
 }
 
-
-void MainWindow::iterateQueue()
+void MainWindow::IterateQueue()
 {
-    if (taskQueue.size() && !processing)
+    if (!TaskQueue.size() && !IsProcessing)
         ui->btnCancel->hide();
     else
         ui->btnCancel->show();
 
-    if (processing)
+    if (IsProcessing)
         return;
 
-    if (!taskQueue.size())
-    {
-        curItemNum = 0;
+    if (!TaskQueue.size()) {
+        CurrentItemNumber = 0;
         return;
     }
 
-    sdOrder curOrd = taskQueue.front();
-    Inferer* inferThread = new Inferer;
+    SDOrder CuOrd = TaskQueue.front();
 
-    if (curAsyncSrc->is_cancelled())
-        curAsyncSrc = std::make_unique<Axodox::Threading::async_operation_source>();
+    Inferer* InferThrd = new Inferer;
 
-    inferThread->options = curOrd.options;
-    inferThread->model = &curModel;
-    inferThread->prompt = curOrd.prompt;
-    inferThread->negPrompt = curOrd.negPrompt;
-    inferThread->batchCount = curOrd.batchCount;
-    inferThread->randSeed = curOrd.randSeed;
+    if (CurrentAsyncSrc->is_cancelled())
+        CurrentAsyncSrc = std::make_unique<Axodox::Threading::async_operation_source>();
 
-    if (!curOrd.inImage.isNull())
-        inferThread->inImg = curOrd.inImage.copy();
+    InferThrd->Opts = CuOrd.Options;
+    InferThrd->Model = &CurrentMdl;
+    InferThrd->Prompt = CuOrd.Prompt;
+    InferThrd->NegativePrompt = CuOrd.NegativePrompt;
+    InferThrd->BatchCount = CuOrd.BatchCount;
+    InferThrd->RandomSeed = CuOrd.RandomSeed;
 
-    if (!curOrd.inMask.isNull())
-        inferThread->inMask = curOrd.inMask.copy();
+    if (!CuOrd.InputImage.isNull())
+        InferThrd->InputImage = CuOrd.InputImage.copy();
+    if (!CuOrd.InputMask.isNull())
+        InferThrd->InputMask = CuOrd.InputMask.copy();
 
-    if (curOrd.isUpscale)
+    if (CuOrd.IsUpscale)
     {
-        curUpscaler.SetEnv(curModel.GetEnv());
-        inferThread->esrgan = &curUpscaler;
-        curPgb = ui->pgbUpscaleProg;
+        CurrentUpscaler.SetEnv(CurrentMdl.GetEnv());
+        InferThrd->EsrGan = &CurrentUpscaler;
+        CurrentPgb = ui->pgbUpscaleProg;
+
     }
-    else
-    {
-        inferThread->esrgan = nullptr;
-        curPgb = ui->pgbCurrentGen;
+    else {
+        InferThrd->EsrGan = nullptr;
+        CurrentPgb = ui->pgbCurrentGen;
     }
 
-    connect(inferThread, &Inferer::done, this, &MainWindow::onImgDone);
-    connect(inferThread, &Inferer::threadDone, this, &MainWindow::onThreadDone);
+    connect(InferThrd, &Inferer::Done, this, &MainWindow::OnImageDone);
+    connect(InferThrd, &Inferer::ThreadFinished, this, &MainWindow::OnThreadDone);
 
-    connect(inferThread, &Inferer::done, inferThread, &QObject::deleteLater);
+    connect(InferThrd, &Inferer::finished, InferThrd, &QObject::deleteLater);
 
-    curInferThread = inferThread;
+    CurrentInferThrd = InferThrd;
     ui->pgbCurrentGen->setRange(0, 100);
     ui->pgbUpscaleProg->setRange(0, 100);
 
-    inferThread->asyncSrc = curAsyncSrc.get();
-    inferThread->start();
+    InferThrd->AsyncSrc = CurrentAsyncSrc.get();
+    InferThrd->start();
 
-    ++curItemNum;
+    ++CurrentItemNumber;
 
-    ui->pgbAllGens->setRange(0, curOrd.batchCount);
+    ui->pgbAllGens->setRange(0, CuOrd.BatchCount);
 
-    taskQueue.pop();
-    processing = true;
+
+    TaskQueue.pop();
+    IsProcessing = true;
 
     ui->lblAllGensProgress->setText(
-        QString::number(taskQueue.size()) + " orders in queue\n" +
-        "Image 0/" + QString::number(curImgNum) + "/" + QString::number(curOrd.batchCount)
+        QString::number(TaskQueue.size()) + " orders in queue\n" +
+        "Image 0/" + QString::number(CuOrd.BatchCount)
     );
 
-    curImgNum = 0;
+    CurrentImageNumber = 0;
 }
 
-void MainWindow::updateModelsList() {
+void MainWindow::UpdateModelListing()
+{
     QDir appDir(QCoreApplication::applicationDirPath());
 
     QDir modelsDir(appDir.absoluteFilePath("models"));
 
     if (!modelsDir.exists()) {
-        loadingModels = false;
-        ui->edtModelPath->setEditable(!loadingModels);
+        LoadingFromModelsFolder = false;
+        ui->edtModelPath->setEditable(!LoadingFromModelsFolder);
         return;
     }
 
     modelsDir.setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
-
     QFileInfoList folders = modelsDir.entryInfoList();
 
     ui->edtModelPath->setCurrentText("");
     ui->edtModelPath->clear();
-
     foreach(const QFileInfo & folder, folders) {
         ui->edtModelPath->addItem(folder.fileName());
     }
 
-    loadingModels = true;
-    ui->edtModelPath->setEditable(!loadingModels);
+    LoadingFromModelsFolder = true;
+    ui->edtModelPath->setEditable(!LoadingFromModelsFolder);
 }
 
-void MainWindow::updateSelectedTopBarImg(size_t NewSelected)
-{
-    for (auto*& imgWid : topBarImgs)
-    {
-        imgWid->setSelectedBorder(false);
-    }
-
-    topBarImgs[NewSelected]->setSelectedBorder(true);
-
-    int32_t neighbor = getNeighbor(NewSelected);
-
-    if (neighbor != -1)
-        topBarImgs[neighbor]->setSelectedBorder(true);
-}
-
-void MainWindow::resetViewports() {
-    const int PREVIEW_RES = 430;
-
-    QPixmap whiteFillPixm = QPixmap(PREVIEW_RES, PREVIEW_RES);
-    whiteFillPixm.fill(Qt::white);
-
-    ui->lblLeftImg->setPixmap(whiteFillPixm);
-    ui->lblLeftImg->originalImg = nullptr;
-    ui->lblLeftImg->pointerToFilePath = nullptr;
-
-    ui->lblImg->setPixmap(whiteFillPixm);
-    ui->lblImg->originalImg = nullptr;
-    ui->lblImg->pointerToFilePath = nullptr;
-}
-
-void MainWindow::onImg2ImgEnabled()
-{
-    const int PREVIEW_RES = 430;
-    QImage white(PREVIEW_RES, PREVIEW_RES, QImage::Format_RGBA8888);
-    white.fill(Qt::white);
-    ui->widInpaintCanvas->loadImg(white);
-}
-
-void MainWindow::updateUpscalerList()
-{
+void MainWindow::UpdateUpscalerListing() {
     QDir appDir(QCoreApplication::applicationDirPath());
-    QDir upscalerDir(appDir.absoluteFilePath("upscalers"));
 
-    if (!upscalerDir.exists())
-    {
+    QDir upscalersDir(appDir.absoluteFilePath("upscalers"));
+
+    if (!upscalersDir.exists()) {
         ui->cbUpscalerModels->setDisabled(true);
         return;
     }
 
-    upscalerDir.setNameFilters(QStringList() << "*.onnx");
-    upscalerDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
+    upscalersDir.setNameFilters(QStringList() << "*.onnx");
+    upscalersDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
 
-    QFileInfoList files = upscalerDir.entryInfoList();
+    QFileInfoList files = upscalersDir.entryInfoList();
 
     ui->cbUpscalerModels->setCurrentText("");
     ui->cbUpscalerModels->clear();
 
-    foreach(const QFileInfo & file, files)
-    {
+    foreach(const QFileInfo & file, files) {
         QString modelName = file.baseName();
         ui->cbUpscalerModels->addItem(modelName);
     }
 
     ui->cbUpscalerModels->setDisabled(false);
 
-    if (!files.isEmpty())
+    if (!files.isEmpty()) {
         ui->cbUpscalerModels->setCurrentIndex(0);
+    }
+}
+
+
+
+void MainWindow::UpdateSelectedTopBarImg(size_t NewSelected)
+{
+    for (auto*& ImgWid : TopBarImages)
+        ImgWid->SetSelectedBorder(false);
+
+    TopBarImages[NewSelected]->SetSelectedBorder(true);
+
+    int32_t Neighbor = GetNeighbor(NewSelected);
+
+    if (Neighbor != -1)
+        TopBarImages[Neighbor]->SetSelectedBorder(true);
+}
+
+void MainWindow::ResetViewports()
+{
+    const int PREVIEW_RES = 430;
+
+    QPixmap WhiteFillPixm = QPixmap(PREVIEW_RES, PREVIEW_RES);
+    WhiteFillPixm.fill(Qt::white);
+
+    ui->lblLeftImg->setPixmap(WhiteFillPixm);
+    ui->lblLeftImg->OriginalImage = nullptr;
+    ui->lblLeftImg->pToOriginalFilePath = nullptr;
+
+    ui->lblImg->setPixmap(WhiteFillPixm);
+    ui->lblImg->OriginalImage = nullptr;
+    ui->lblImg->pToOriginalFilePath = nullptr;
+}
+
+void MainWindow::OnImg2ImgEnabled()
+{
+    const int PREVIEW_RES = 430;
+
+    QImage white(PREVIEW_RES, PREVIEW_RES, QImage::Format_RGBA8888);
+    white.fill(Qt::white);
+    ui->widInpaintCanvas->loadImage(white);
+}
+
+
+void MainWindow::on_btnImagesForward_clicked()
+{
+    size_t MaxIndex = TopBarImages.size() - 1;
+    size_t DoubleHopIndex = CurrentImgDisplayIndex + 2;
+    size_t SingleHopIndex = CurrentImgDisplayIndex + 1;
+
+    if (DoubleHopIndex < MaxIndex)
+        OnTopBarClick(DoubleHopIndex);
+    else if (SingleHopIndex < MaxIndex)
+        OnTopBarClick(SingleHopIndex);
+    else
+        return;
+}
+
+
+void MainWindow::on_btnImagesBackwards_clicked()
+{
+    size_t MinIndex = 0;
+    int32_t DoubleHopIndex = CurrentImgDisplayIndex - 2;
+
+    DoubleHopIndex = std::max<int32_t>(DoubleHopIndex, 0);
+    OnTopBarClick(DoubleHopIndex);
+}
+
+void MainWindow::on_actionScroll_Left_triggered()
+{
+    on_btnImagesBackwards_clicked();
+}
+
+void MainWindow::on_actionScroll_Right_triggered()
+{
+    on_btnImagesForward_clicked();
+}
+
+void MainWindow::on_actionOpen_outputs_directory_triggered()
+{
+    QString winPath = QDir::toNativeSeparators(OutpsDir);
+
+    QStringList args;
+    args << winPath;
+    QProcess::startDetached("explorer", args);
+
+}
+
+void MainWindow::on_actionClear_current_outputs_2_triggered()
+{
+    if (PreviewsSpacer) {
+        ui->scraLayout->removeItem(PreviewsSpacer);
+        delete PreviewsSpacer;
+        PreviewsSpacer = nullptr;
+    }
+
+    for (auto* ImgPreview : TopBarImages)
+    {
+        ui->scraLayout->removeWidget(ImgPreview);
+        delete ImgPreview;
+
+    }
+    TopBarImages.clear();
+
+    ResetViewports();
+    CurrentImgDisplayIndex = 0;
+}
+
+void MainWindow::on_btnCancel_clicked()
+{
+    CurrentAsyncSrc->cancel();
+}
+
+void MainWindow::on_actionRefresh_model_listing_triggered()
+{
+    UpdateModelListing();
+}
+
+void MainWindow::on_chkImg2Img_stateChanged(int arg1)
+{
+    bool Enabled = (bool)arg1;
+
+    ui->grpImg2Img->setVisible(Enabled);
+
+    ui->widInpaintCanvas->setVisible(Enabled);
+    ui->lblImgArrow->setVisible(Enabled);
+
+    ui->btnClearInpaint->setVisible(Enabled);
+
+
+    if (Enabled) {
+        ui->horizontalSpacer->changeSize(0, 0, QSizePolicy::Ignored, QSizePolicy::Ignored);
+        ui->horizontalSpacer_2->changeSize(0, 0, QSizePolicy::Ignored, QSizePolicy::Ignored);
+        OnImg2ImgEnabled();
+
+    }
+    else {
+        ui->horizontalSpacer->changeSize(40, 20, QSizePolicy::Expanding);
+        ui->horizontalSpacer_2->changeSize(40, 20, QSizePolicy::Maximum);
+
+    }
+    update();
+}
+
+void MainWindow::on_sliDenoiseStrength_valueChanged(int value)
+{
+    ui->lblDenoisePercShow->setText(QString::number(value) + "%");
+}
+
+
+void MainWindow::on_chkInpaint_stateChanged(int arg1)
+{
+    ui->widInpaintCanvas->setPaintingEnabled((bool)arg1);
+}
+
+void MainWindow::on_btnClearInpaint_clicked()
+{
+
+    ui->widInpaintCanvas->clearStrokes();
+}
+
+void MainWindow::on_btnUpscale_clicked()
+{
+
+    if (!CurrentUpscaler.IsLoaded())
+        on_btnLoadUpscaler_clicked();
+    SDOrder Ord{ ui->edtPrompt->toPlainText().toStdString(), ui->edtNegPrompt->toPlainText().toStdString(), Axodox::MachineLearning::StableDiffusionOptions{}, (uint32_t)ui->spbBatchCount->value(), ui->edtSeed->text().isEmpty() };
+
+    Ord.InputImage = *ui->lblUpscalePreImage->OriginalImage;
+    Ord.IsUpscale = true;
+
+    TaskQueue.push(Ord);
+    IterateQueue();
+}
+
+void MainWindow::on_btnLoadUpscaler_clicked()
+{
+    if (!CurrentMdl.GetEnv())
+        CurrentMdl.LoadMinimal();
+
+    CurrentUpscaler.SetEnv(CurrentMdl.GetEnv());
+
+    CurrentUpscaler.Load(
+        QString(QCoreApplication::applicationDirPath() + "/upscalers/" + ui->cbUpscalerModels->currentText() + ".onnx").toStdString()
+    );
 }

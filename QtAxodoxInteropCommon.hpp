@@ -37,8 +37,6 @@ namespace QtAxInterop {
             QImage image(ImageBuffer.data(), TexDat.Width, TexDat.Height, TexDat.Width * bytesPerPixel, format);
 
             OutImg = image.copy();
-
-
         }
     };
 }

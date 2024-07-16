@@ -29,7 +29,7 @@
                   <bool>true</bool>
                 </property>
                 <property name="currentText">
-                  <string>F:\SD-WebUI\SD-CApp\oliveu\examples\stable_diffusion\models\optimized-dml\ponydiff-fol2</string>
+                  <string></string>
                 </property>
                 <property name="text" stdset="0">
                   <string/>
@@ -973,18 +973,18 @@
     <customwidget>
       <class>ClickableImageLabel</class>
       <extends>QLabel</extends>
-      <header>ClickableImgLabel.h</header>
+      <header>clickableimagelabel.h</header>
     </customwidget>
     <customwidget>
       <class>HorizontalScrollArea</class>
       <extends>QScrollArea</extends>
-      <header>Horizontalscrollarea.h</header>
+      <header>horizontalscrollarea.h</header>
       <container>1</container>
     </customwidget>
     <customwidget>
       <class>PaintableCanvas</class>
       <extends>QWidget</extends>
-      <header>Canvas.h</header>
+      <header>paintablecanvas.h</header>
       <container>1</container>
     </customwidget>
   </customwidgets>

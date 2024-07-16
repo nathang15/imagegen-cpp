@@ -1,6 +1,7 @@
 #pragma once
 #include "Include/Axodox.MachineLearning.h"
 
+
 namespace Axodox::MachineLearning
 {
 	class ESRGAN

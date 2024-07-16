@@ -11,17 +11,12 @@ using namespace Axodox::Collections;
 using json = nlohmann::json;
 using namespace std;
 
-
-
 void StableDiffusionModel::GetPredictionType(const std::string& ModelPath)
 {
     std::string SchedulerConfPath = "scheduler/scheduler_config.json";
-
-
     if (!(ModelPath[ModelPath.size() - 1] == '/' || ModelPath[ModelPath.size() - 1] == '\\'))
         SchedulerConfPath = "/" + SchedulerConfPath;
 
-    // read a JSON file
     std::ifstream i(ModelPath + SchedulerConfPath);
 
     json SchedulerConf;
@@ -33,17 +28,13 @@ void StableDiffusionModel::GetPredictionType(const std::string& ModelPath)
     std::string PredTypeString = SchedulerConf["prediction_type"].get<std::string>();
 
     if (PredTypeString == "v_prediction")
-        PredictionType = StableDiffusionSchedulerPredictionType ::V;
+        PredictionType = StableDiffusionSchedulerPredictionType::V;
     else
         PredictionType = StableDiffusionSchedulerPredictionType::Epsilon;
-
 }
 
 void StableDiffusionModel::CreateTextEmbeddings(const std::string& PosPrompt, const std::string& NegPrompt, Axodox::MachineLearning::StableDiffusionOptions& Options, ScheduledTensor* SchTensor)
 {
-
-
-
     auto encodedNegativePrompt = TxtEmbedder->SchedulePrompt(NegPrompt, Options.StepCount);
     auto encodedPositivePrompt = TxtEmbedder->SchedulePrompt(PosPrompt, Options.StepCount);
 
@@ -65,7 +56,6 @@ void StableDiffusionModel::CreateTextEmbeddings(const std::string& PosPrompt, co
     }
 
     Options.TextEmbeddings.Tensor = tensor;
-
 }
 
 void StableDiffusionModel::LoadVAEEncoder()
@@ -76,13 +66,6 @@ void StableDiffusionModel::LoadVAEEncoder()
 
 StableDiffusionModel::StableDiffusionModel() {
     Loaded = false;
-    /*
-        debugController = nullptr;
-        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-            debugController->EnableDebugLayer();
-        }
-        if (debugController) debugController->Release();
-    */
 }
 
 void StableDiffusionModel::Destroy()
@@ -97,7 +80,7 @@ void StableDiffusionModel::Destroy()
 
     }
     catch (...)
-    { // nobody gives a shit about errors on deletion.
+    { 
 
     }
 
@@ -125,11 +108,8 @@ bool StableDiffusionModel::Load(const std::string& ModelPath)
 
 Tensor StableDiffusionModel::EncodeImageVAE(const Axodox::Graphics::TextureData& TexData)
 {
-
     if (!VAE_E)
         LoadVAEEncoder();
-
-
     Tensor InpTexTens = Tensor::FromTextureData(TexData.ToFormat(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB), ColorNormalization::LinearPlusMinusOne);
     return VAE_E->EncodeVae(InpTexTens);
 
@@ -137,7 +117,6 @@ Tensor StableDiffusionModel::EncodeImageVAE(const Axodox::Graphics::TextureData&
 
 std::vector<Axodox::Collections::aligned_vector<uint8_t>> StableDiffusionModel::DoTxt2Img(const std::string& Prompt, const std::string& NegativePrompt, Axodox::MachineLearning::StableDiffusionOptions Options, Axodox::Threading::async_operation_source* OpSrc)
 {
-    // Make embeddings
     Options.PredictionType = PredictionType;
 
     ScheduledTensor ScheduledEmbedTens{ Options.StepCount };
@@ -145,14 +124,10 @@ std::vector<Axodox::Collections::aligned_vector<uint8_t>> StableDiffusionModel::
 
     CreateTextEmbeddings(Prompt, NegativePrompt, Options, &ScheduledEmbedTens);
 
-    // Inference UNet
-
     auto x = UNet->RunInference(Options, OpSrc);
 
     if (OpSrc->is_cancelled())
         return std::vector<aligned_vector<uint8_t>>{};
-
-    // VAE
 
     x = VAE_D->DecodeVae(x);
 
@@ -164,17 +139,12 @@ std::vector<Axodox::Collections::aligned_vector<uint8_t>> StableDiffusionModel::
         auto ImageBuffer = ImgTexture.ToFormat(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).Buffer; // ToBuffer() emits obscure D3D12 error because it's been shitting itself
         ImageBuffers.push_back(ImageBuffer);
     }
-
-
-
     return ImageBuffers;
-
 }
 
 void StableDiffusionModel::ReleaseDebugController()
 {
     if (debugController) debugController->Release();
-
 }
 
 void StableDiffusionModel::LoadMinimal()
@@ -184,7 +154,5 @@ void StableDiffusionModel::LoadMinimal()
 
 StableDiffusionModel::~StableDiffusionModel()
 {
-
     Destroy();
-
 }

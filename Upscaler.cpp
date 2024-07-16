@@ -1,13 +1,11 @@
-#include "Upscaler.h"
+#include "upscaler.h"
 
 using namespace Axodox::Graphics;
 using namespace Axodox::MachineLearning;
 using namespace Axodox::Collections;
-#include "InteropAxodoxCommon.hpp"
-
+#include "QtAxodoxInteropCommon.hpp"
 using namespace QtAxInterop;
 #include <stdexcept>
-
 #include <QPainter>
 
 QList<QImage> Upscaler::SplitImageIntoChunks(const QImage& image, int chunkSize, int overlap) {
@@ -20,7 +18,6 @@ QList<QImage> Upscaler::SplitImageIntoChunks(const QImage& image, int chunkSize,
         for (int x = 0; x < width; x += chunkSize) {
             int startX = x == 0 ? 0 : x - overlap;
             int startY = y == 0 ? 0 : y - overlap;
-
             int chunkWidth = chunkSize + (x == 0 ? 0 : overlap) + ((x + chunkSize >= width) ? 0 : overlap);
             int chunkHeight = chunkSize + (y == 0 ? 0 : overlap) + ((y + chunkSize >= height) ? 0 : overlap);
 
@@ -31,7 +28,6 @@ QList<QImage> Upscaler::SplitImageIntoChunks(const QImage& image, int chunkSize,
             chunks.append(chunk);
         }
     }
-
     return chunks;
 }
 
@@ -49,7 +45,6 @@ QImage Upscaler::RemoveOverlapFromChunk(const QImage& chunk, const QSize& finalC
     int startY = isTopEdge ? 0 : overlap;
 
     QImage trimmedChunk = chunk.copy(startX, startY, newWidth, newHeight);
-
     return trimmedChunk;
 }
 
@@ -68,7 +63,6 @@ QImage Upscaler::JoinImageChunks(const QList<QImage>& chunks, const QSize& final
 
     for (int i = 0; i < chunks.count(); ++i) {
         QImage trimmedChunk = RemoveOverlapFromChunk(chunks[i], finalChunkSize, originalSize, overlap, xPosition, yPosition);
-
         painter.drawImage(xPosition, yPosition, trimmedChunk);
 
         xPosition += finalChunkSize.width();
@@ -107,14 +101,16 @@ void Upscaler::Load(const std::string& ModelPath)
 QImage Upscaler::UpscaleImg(const QImage& InImg, uint32_t TileSize, uint32_t Overlap, Axodox::Threading::async_operation_source* async_src)
 {
     if (Overlap > TileSize + 1)
-        throw std::invalid_argument("Overlap cannot be bigger than or equal to tile size!");
+        throw std::invalid_argument("Overlap cannot be bigger than or equal to tile size");
 
     if (InImg.isNull())
-        throw std::invalid_argument("Cannot upscale a null or invalid image!");
+        throw std::invalid_argument("Cannot upscale a null or invalid image");
 
     uint32_t OverlapDimensionsAdd = Overlap * 2;
+
     uint32_t RealTileDim = TileSize - OverlapDimensionsAdd;
     QSize szTileSize(RealTileDim, RealTileDim);
+
     auto ImgList = SplitImageIntoChunks(InImg, RealTileDim, Overlap);
 
     QList<QImage> UpsChunks;
@@ -129,18 +125,13 @@ QImage Upscaler::UpscaleImg(const QImage& InImg, uint32_t TileSize, uint32_t Ove
         }
 
         try {
-
             InterOpHelper::QImageToTextureData(Img, TexDat);
-
             TexDat = TexDat.ToFormat(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB);
 
             Axodox::MachineLearning::Tensor InpChunk = Tensor::FromTextureData(TexDat, ColorNormalization::LinearZeroToOne);
             auto res = Model->Upscale(InpChunk);
 
             auto OutTexDatS = res.ToTextureData(ColorNormalization::LinearZeroToOne);
-
-
-
             InterOpHelper::TextureDataToQImage(OutTexDatS[0], OutChunk);
             UpsChunks.push_back(OutChunk.copy());
 
@@ -162,6 +153,4 @@ QImage Upscaler::UpscaleImg(const QImage& InImg, uint32_t TileSize, uint32_t Ove
     QImage FinalImg = JoinImageChunks(UpsChunks, FinalChunkSize, FinalSize, FinalOverlapSize);
 
     return FinalImg.copy();
-
-
 }

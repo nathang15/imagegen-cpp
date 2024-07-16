@@ -1,58 +1,63 @@
-#include "TopbarImg.h"
+#include "topbarimg.h"
 
-TopbarImg::TopbarImg(QWidget* parent, Qt::WindowFlags f) :QLabel(parent, f)
-{
-	setAttribute(Qt::WA_Hover);
-	curSelected = false;
+TopBarImg::TopBarImg(QWidget* parent, Qt::WindowFlags f)
+    : QLabel(parent, f) {
+    setAttribute(Qt::WA_Hover);
+    IsCurrentlySelected = false;
 }
 
-TopbarImg::~TopbarImg() {}
-
-TopbarImg::TopbarImg() {}
-
-void TopbarImg::enterEvent(QEnterEvent* event)
+TopBarImg::~TopBarImg()
 {
-	QLabel::enterEvent(event);
-
-	if (curSelected)
-		return;
-
-	setHoveringBorder(true);
-	emit hoverEnter(VecIndex);
-}
-
-void TopbarImg::leaveEvent(QEvent* event)
-{
-	QLabel::leaveEvent(event);
-
-	if (curSelected)
-		return;
-
-	setHoveringBorder(false);
-	emit hoverExit(VecIndex);
-}
-
-void TopbarImg::mousePressEvent(QMouseEvent* event)
-{
-	QLabel::mousePressEvent(event);
-	emit mouseClicked(VecIndex);
 
 }
+TopBarImg::TopBarImg() {}
 
-void TopbarImg::setHoveringBorder(bool hovering)
+void TopBarImg::enterEvent(QEnterEvent* event)
 {
-	if (hovering)
-		setStyleSheet("border: 2px solid yellow;");
-	else
-		setStyleSheet("");
+    QLabel::enterEvent(event);
+
+    if (IsCurrentlySelected)
+        return;
+
+    SetHoveringBorder(true);
+
+    emit HoverEnter(VecIndex);
 }
 
-void TopbarImg::setSelectedBorder(bool selected)
+void TopBarImg::leaveEvent(QEvent* event)
 {
-	if (selected)
-		setStyleSheet("border: 3px solid blue;");
-	else
-		setStyleSheet("");
+    QLabel::leaveEvent(event);
 
-	curSelected = selected;
+    if (IsCurrentlySelected)
+        return;
+
+    SetHoveringBorder(false);
+
+    emit HoverExit(VecIndex);
+
+}
+
+void TopBarImg::mousePressEvent(QMouseEvent* event)
+{
+    QLabel::mousePressEvent(event);
+    emit MouseClicked(VecIndex);
+}
+
+void TopBarImg::SetHoveringBorder(bool IsHovering)
+{
+
+    if (IsHovering)
+        setStyleSheet("border: 2px solid yellow;");
+    else
+        setStyleSheet("");
+}
+
+void TopBarImg::SetSelectedBorder(bool IsSelected)
+{
+    if (IsSelected)
+        setStyleSheet("border: 3px solid blue;");
+    else
+        setStyleSheet("");
+
+    IsCurrentlySelected = IsSelected;
 }

@@ -1,22 +1,22 @@
-#ifndef CANVAS_H
-#define CANVAS_H
+#ifndef PAINTABLECANVAS_H
+#define PAINTABLECANVAS_H
 
 #include <QWidget>
 #include <QImage>
 #include <QMouseEvent>
 #include <QPainter>
 
-class Canvas : public QWidget {
+class PaintableCanvas : public QWidget {
     Q_OBJECT
 
 public:
-    explicit Canvas(QWidget* parent = nullptr);
-    void loadImg(const QString& imgPath);
-    void loadImg(const QImage& img);
+    explicit PaintableCanvas(QWidget* parent = nullptr);
+    void loadImage(const QString& imagePath);
+    void loadImage(const QImage& Img);
     void setPaintingEnabled(bool enabled);
     void clearStrokes();
 
-    QImage getImg() const;
+    QImage getImage() const;
     QImage getMask() const;
 
 protected:
@@ -30,11 +30,10 @@ protected:
 
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
-
     void wheelEvent(QWheelEvent* event) override;
-
 private:
-    void init();
+
+    void Initialize();
     void setCustomCursor();
     int brushSize;
     QImage canvasImage;
@@ -49,4 +48,4 @@ signals:
     void OnImageSet();
 };
 
-#endif
+#endif // PAINTABLECANVAS_H

@@ -4,18 +4,14 @@
 #include <QLabel>
 #include <QObject>
 #include <QImage>
-class TopbarImg : public QLabel
+class TopBarImg : public QLabel
 {
     Q_OBJECT
-
 public:
-    explicit TopbarImg(
-        QWidget* parent = Q_NULLPTR,
-        Qt::WindowFlags f = Qt::WindowFlags()
-    );
-    ~TopbarImg() override;
-    TopbarImg();
+    explicit TopBarImg(QWidget* parent = Q_NULLPTR, Qt::WindowFlags f = Qt::WindowFlags());
+    ~TopBarImg() override;
 
+    TopBarImg();
 protected:
     void enterEvent(QEnterEvent* event) override;
     void leaveEvent(QEvent* event) override;
@@ -26,16 +22,15 @@ public:
     QImage OriginalImg;
     QString FilePath;
 
-    void setHoveringBorder(bool hovering);
-    void setSelectedBorder(bool selected);
+    void SetHoveringBorder(bool IsHovering);
+    void SetSelectedBorder(bool IsSelected);
 
 signals:
-    void hoverEnter(size_t labelIndex);
-    void hoverExit(size_t labelIndex);
-    void mouseClicked(size_t labelIndex);
-
+    void HoverEnter(size_t LblIndex);
+    void HoverExit(size_t LblIndex);
+    void MouseClicked(size_t LblIndex);
 private:
-    bool curSelected;
+    bool IsCurrentlySelected;
 };
 
-#endif
+#endif // TOPBARIMG_H

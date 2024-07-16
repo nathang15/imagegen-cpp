@@ -3,43 +3,46 @@
 
 #include <QThread>
 #include "stablediffusionmodel.h"
-#include "Upscaler.h"
+#include "upscaler.h"
 #include <QImage>
 
-enum class SDJobType {
-    txt2Img,
-    img2Img,
-    upscale
+enum class StableDiffusionJobType {
+    Txt2Img,
+    Img2Img,
+    Upscale
 };
 class Inferer : public QThread
 {
     Q_OBJECT
+
         void run() override;
+
+
 
 public:
     Inferer();
 
-    void infer();
+    void DoInference();
 
-    StableDiffusionModel* model;
-    Upscaler* esrgan;
+    StableDiffusionModel* Model;
+    Upscaler* EsrGan;
 
-    Axodox::MachineLearning::StableDiffusionOptions options;
-    Axodox::Threading::async_operation_source* asyncSrc;
+    Axodox::MachineLearning::StableDiffusionOptions Opts;
+    Axodox::Threading::async_operation_source* AsyncSrc;
 
-    QImage inImg;
-    QImage inMask;
-    std::string prompt;
-    std::string negPrompt;
-    uint32_t batchCount;
-    bool randSeed;
+    QImage InputImage;
+    QImage InputMask;
+    std::string Prompt;
+    std::string NegativePrompt;
+    uint32_t BatchCount;
+    bool RandomSeed;
 
-    int32_t getStepsDone();
+    int32_t GetStepsDone();
 
 
 signals:
-    void done(QImage Img, SDJobType jobType);
-    void threadDone();
+    void Done(QImage Img, StableDiffusionJobType JobType);
+    void ThreadFinished();
 };
 
-#endif
+#endif // INFERER_H

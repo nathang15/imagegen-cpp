@@ -4,33 +4,34 @@
 #include <QScrollBar>
 #include <QEvent>
 
-HorizontalScrollArea::HorizontalScrollArea(QWidget* parent) : QScrollArea(parent)
+HorizontalScrollArea::HorizontalScrollArea(QWidget* parent)
+    : QScrollArea(parent)
 {
-	setWidgetResizable(true);
-	setFrameStyle(QFrame::NoFrame);
-	setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	m_scrollAreaWidgetContents = nullptr;
+    setWidgetResizable(true);
+    setFrameStyle(QFrame::NoFrame);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_scrollAreaWidgetContents = nullptr;
+
+
 }
 
-void HorizontalScrollArea::registerContentsWidget(QWidget* scraWidContents)
+void HorizontalScrollArea::RegisterContentsWidget(QWidget* ScraWidContents)
 {
-	m_scrollAreaWidgetContents = scraWidContents;
-	m_scrollAreaWidgetContents->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-	m_scrollAreaWidgetContents->installEventFilter(this);
+    m_scrollAreaWidgetContents = ScraWidContents;
+
+    m_scrollAreaWidgetContents->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_scrollAreaWidgetContents->installEventFilter(this);
 }
 
-bool HorizontalScrollArea::eventFilter(QObject* obj, QEvent* event)
-{
-	if (obj == m_scrollAreaWidgetContents && event->type() == QEvent::Resize)
-	{
-		int32_t scrollBarHeight = verticalScrollBar()->height();
+bool HorizontalScrollArea::eventFilter(QObject* o, QEvent* e) {
+    if (o == m_scrollAreaWidgetContents && e->type() == QEvent::Resize) {
+        int32_t ScrollBarHeight = horizontalScrollBar()->height();
 
-		if (!horizontalScrollBar()->isVisible())
-		{
-			scrollBarHeight = 0;
-		}
-		setMinimumHeight(m_scrollAreaWidgetContents->minimumSizeHint().height() + scrollBarHeight);
-	}
-	return QScrollArea::eventFilter(obj, event);
+        if (!horizontalScrollBar()->isVisible())
+            ScrollBarHeight = 0;
+
+        setMinimumHeight(m_scrollAreaWidgetContents->minimumSizeHint().height() + ScrollBarHeight);
+    }
+    return QScrollArea::eventFilter(o, e);
 }
